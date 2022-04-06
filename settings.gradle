@@ -1,0 +1,3 @@
+rootProject.name = 'TFLite Reinforcement Learning Demo App'
+include ':app'
+include ':DocScanner'

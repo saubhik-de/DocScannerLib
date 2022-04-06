@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/TFLite_Reinforcement_Learning_Demo_App.iml" filepath="$PROJECT_DIR$/.idea/modules/TFLite_Reinforcement_Learning_Demo_App.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/DocScanner/TFLite_Reinforcement_Learning_Demo_App.DocScanner.iml" filepath="$PROJECT_DIR$/.idea/modules/DocScanner/TFLite_Reinforcement_Learning_Demo_App.DocScanner.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/TFLite_Reinforcement_Learning_Demo_App.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/TFLite_Reinforcement_Learning_Demo_App.app.iml" />
+    </modules>
+  </component>
+</project>
