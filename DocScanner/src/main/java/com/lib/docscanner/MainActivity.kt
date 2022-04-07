@@ -83,9 +83,9 @@ class MainActivity : AppCompatActivity() {
     bmp2 = BitmapFactory.decodeFile(image2_path)
     //bmp2 = BitmapFactory.decodeByteArray(byteArray2, 0, byteArray2!!.size)
 
-    val toolbar: Toolbar = findViewById(R.id.toolbar)
-    setSupportActionBar(toolbar)
-    supportActionBar?.setDisplayShowTitleEnabled(false)
+   // val toolbar: Toolbar = findViewById(R.id.toolbar)
+    ///setSupportActionBar(toolbar)
+    //supportActionBar?.setDisplayShowTitleEnabled(false)
 
     tfImageView = findViewById(R.id.tf_imageview)
     androidImageView = findViewById(R.id.android_imageview)
