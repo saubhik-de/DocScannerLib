@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================
 */
 
-package com.lib.docscanner
+package org.tensorflow.lite.examples.ocr
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -49,6 +49,7 @@ import org.opencv.imgproc.Imgproc.warpPerspective
 import org.opencv.utils.Converters.vector_RotatedRect_to_Mat
 import org.opencv.utils.Converters.vector_float_to_Mat
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.examples.ocr.utils.Utils
 import org.tensorflow.lite.gpu.GpuDelegate
 
 /**
@@ -152,6 +153,7 @@ class OCRModelExecutor(context: Context, private var useGPU: Boolean = false) : 
     val detectedRotatedRects = ArrayList<RotatedRect>()
     val detectedConfidences = ArrayList<Float>()
 
+
     for (y in 0 until transposeddetectionScores[0][0].size) {
       val detectionScoreData = transposeddetectionScores[0][0][y]
       val detectionGeometryX0Data = transposedDetectionGeometries[0][0][y]
@@ -209,18 +211,39 @@ class OCRModelExecutor(context: Context, private var useGPU: Boolean = false) : 
     )
   }
 
+  private fun getJsonResult(pattern: Regex, recognizedText: String, jkey: String): String {
+    println("********************************")
+    println(recognizedText)
+    println("_____________________________________")
+    var tmpStr = ""
+    val p = pattern
+    val pfoundall = p.findAll(recognizedText)
+    var m = ""
+    pfoundall.forEach { f ->
+      m = m + f.value + ","
+    }
+    tmpStr = jkey + ": " + m + ","
+    println("&&&&&&&&&&&")
+    println(tmpStr)
+    println("********************************")
+    return tmpStr
+  }
   private fun recognizeTexts(
     data: Bitmap,
     boundingBoxesMat: MatOfRotatedRect,
     indicesMat: MatOfInt
   ): Bitmap {
-    val bitmapWithBoundingBoxes = data.copy(Bitmap.Config.ARGB_8888, true)
+    var bitmapWithBoundingBoxes = data.copy(Bitmap.Config.ARGB_8888, true)
+    //TODO: apply peprocessing
+    bitmapWithBoundingBoxes = Utils.preProcessBitmap(bitmapWithBoundingBoxes)
     val canvas = Canvas(bitmapWithBoundingBoxes)
     val paint = Paint()
     paint.style = Paint.Style.STROKE
     paint.strokeWidth = 10.toFloat()
     paint.setColor(Color.GREEN)
 
+    var lastOutput: String
+    lastOutput = ""
     for (i in indicesMat.toArray()) {
       val boundingBox = boundingBoxesMat.toArray()[i]
       val targetVertices = ArrayList<Point>()
@@ -304,9 +327,49 @@ class OCRModelExecutor(context: Context, private var useGPU: Boolean = false) : 
       }
       Log.d("Recognition result:", recognizedText)
       if (recognizedText != "") {
-        ocrResults.put(recognizedText, getRandomColor())
+        //ocrResults.put(recognizedText, getRandomColor())
       }
+      lastOutput = lastOutput + " " + recognizedText
     }
+
+    var Result: String
+    Result = "{"
+    //TODO: pattern 1 id_number
+    val p1 = "\\s\\d{9}\\s".toRegex()
+    Result = Result + getJsonResult(p1, lastOutput, "id_number")
+
+    //TODO: pattern 2  dob
+    val p2 = "\\s\\d{2}.\\d{2}.\\d{4}\\s".toRegex()
+    Result = Result + getJsonResult(p2, lastOutput, "dob")
+    //TODO: pattern 3  name
+    val p3 = "\\s[a-z]+\\s".toRegex()
+    Result = Result + getJsonResult(p3, lastOutput, "name")
+    //TODO: pattern 4  GEN
+    val p4 = "\\sM\\s|\\sF\\s".toRegex()
+    Result = Result + getJsonResult(p4, lastOutput, "GEN")
+
+    //TODO: pattern 5  doi
+    val p5 = "\\s\\d{2}.\\d{2}.\\d{4}\\s".toRegex()
+    Result = Result + getJsonResult(p5, lastOutput,  "doi")
+    //TODO: pattern 6  district
+    val p6 = "\\s\\w+\\s".toRegex()
+    Result = Result + getJsonResult(p6, lastOutput, "district")
+    //TODO: pattern 7  serial_no
+    val p7 = "\\s[A-Z]{3}\\s".toRegex()
+    Result = Result + getJsonResult(p7, lastOutput, "serial_no")
+    //TODO: pattern 8  poi
+    val p8 = "\\s[A-Z]+\\s".toRegex()
+    Result = Result + getJsonResult(p8, lastOutput, "poi")
+
+
+    Result = Result + "}"
+
+
+
+
+    ocrResults.put(Result, getRandomColor())
+
+
     return bitmapWithBoundingBoxes
   }
   // base:
@@ -361,6 +424,7 @@ class OCRModelExecutor(context: Context, private var useGPU: Boolean = false) : 
 
   companion object {
     public const val TAG = "TfLiteOCRDemo"
+    //private const val textDetectionModel = "chitresh_model.tflite"
     private const val textDetectionModel = "text_detection.tflite"
     private const val textRecognitionModel = "text_recognition.tflite"
     private const val numberThreads = 4

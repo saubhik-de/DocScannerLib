@@ -1,6 +1,8 @@
 package com.lib.docscanner.camera_module.extensions
 
 import android.content.Context
+import android.os.Build
+import android.os.Environment
 import com.lib.docscanner.R
 import java.io.File
 
@@ -8,9 +10,16 @@ import java.io.File
 internal val Context.outputDirectory: File
     get() {
         val appContext = applicationContext
-        val mediaDir = externalMediaDirs.firstOrNull()?.let {
-            File(it, appContext.resources.getString(R.string.app_name)).apply { mkdirs() }
+        val mediaDir: File = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getExternalFilesDir(Environment.DIRECTORY_PICTURES)?.let {
+                File(it, appContext.resources.getString(R.string.app_name)).apply { mkdirs() }
+            }!!
+        } else {
+            @Suppress("DEPRECATION")
+            Environment.getExternalStorageDirectory().let {
+                File(it, appContext.resources.getString(R.string.app_name)).apply { mkdirs() }
+            }
         }
-        return if (mediaDir != null && mediaDir.exists())
+        return if (mediaDir.exists())
             mediaDir else appContext.filesDir
     }

@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================
 */
 
-package com.lib.docscanner
+package org.tensorflow.lite.examples.ocr
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

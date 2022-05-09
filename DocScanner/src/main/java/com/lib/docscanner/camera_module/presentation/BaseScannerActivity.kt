@@ -36,7 +36,7 @@ abstract class BaseScannerActivity : AppCompatActivity() {
                 val bitmap = BitmapFactory.decodeFile(image.absolutePath, bmOptions)
                 onDocumentAccepted(bitmap)
 
-                image.delete()
+                //image.delete()
             } else {
                 viewModel.onViewCreated(OpenCVLoader(this), this, binding.viewFinder)
             }

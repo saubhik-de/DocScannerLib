@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================
 */
 
-package com.lib.docscanner
+package org.tensorflow.lite.examples.ocr
 
 import androidx.lifecycle.ViewModel
 import android.content.Context
@@ -49,7 +49,7 @@ class MLExecutionViewModel : ViewModel() {
     inferenceThread: ExecutorCoroutineDispatcher
   ) {
     viewModelScope.launch(inferenceThread) {
-     // val inputStream = context.assets.open(fileName)
+      //val inputStream = context.assets.open(fileName)
       //val contentImage = BitmapFactory.decodeStream(inputStream)
       try {
         val result = ocrModel?.execute(fileName)
