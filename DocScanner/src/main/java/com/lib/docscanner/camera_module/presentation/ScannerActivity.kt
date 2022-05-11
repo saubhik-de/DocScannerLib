@@ -55,7 +55,7 @@ class ScannerActivity : BaseScannerActivity() {
         for (img: String in images) {
             in1.putExtra("image" + (images.indexOf(img) + 1), img)
         }
-        startActivity(in1)
+        //startActivity(in1)
         someActivityResultLauncher.launch(in1)
     }
 
