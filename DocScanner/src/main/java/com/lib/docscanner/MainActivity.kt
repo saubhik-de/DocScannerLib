@@ -17,6 +17,7 @@ limitations under the License.
 package com.lib.docscanner
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -60,9 +61,6 @@ private const val TAG = "MainActivity"
 
 class MainActivity : AppCompatActivity() {
 
-    //private val tfImageName = "tensorflow.jpg"
-    // private val androidImageName = " ugandaId-2.jpg"//"android.jpg"
-    // private val chromeImageName = "ugandaId-1.png"//"chrome.jpg"
     private lateinit var viewModel: MLExecutionViewModel
     private lateinit var resultImageView: ImageView
     private lateinit var tfImageView: ImageView
@@ -74,7 +72,6 @@ class MainActivity : AppCompatActivity() {
 
     private var useGPU = false
 
-    //private var selectedImageName = "tensorflow.jpg"
     private var ocrModel: OCRModelExecutor? = null
     private val inferenceThread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val mainScope = MainScope()
@@ -92,18 +89,11 @@ class MainActivity : AppCompatActivity() {
         image1_path = intent.getStringExtra("image1")!!
         if (intent.hasExtra("image2"))
             image2_path = intent.getStringExtra("image2")!!
-        //val byteArray1 = intent.getByteArrayExtra("image1")
-        bmp1 = BitmapFactory.decodeFile(image1_path)
-        //bmp1 = BitmapFactory.decodeByteArray(byteArray1, 0, byteArray1!!.size)
 
-        //val byteArray2 = intent.getByteArrayExtra("image2")
+        bmp1 = BitmapFactory.decodeFile(image1_path)
+
         if (!image2_path.isNullOrEmpty())
             bmp2 = BitmapFactory.decodeFile(image2_path)
-        //bmp2 = BitmapFactory.decodeByteArray(byteArray2, 0, byteArray2!!.size)
-
-        // val toolbar: Toolbar = findViewById(R.id.toolbar)
-        ///setSupportActionBar(toolbar)
-        //supportActionBar?.setDisplayShowTitleEnabled(false)
 
         tfImageView = findViewById(R.id.tf_imageview)
         androidImageView = findViewById(R.id.android_imageview)
@@ -111,20 +101,11 @@ class MainActivity : AppCompatActivity() {
 
         val candidateImageViews = arrayOf<ImageView>(tfImageView, androidImageView, chromeImageView)
 
-        val assetManager = assets
         try {
-            //val tfInputStream: InputStream = assetManager.open(tfImageName)
-            // val tfBitmap = BitmapFactory.decodeStream(tfInputStream)
             tfImageView.setImageBitmap(bmp1)
             if (bmp2 != null)
                 androidImageView.setImageBitmap(bmp2)
             selectedImage = bmp1;
-            /*val androidInputStream: InputStream = assetManager.open(androidImageName)
-            val androidBitmap = BitmapFactory.decodeStream(androidInputStream)
-
-            val chromeInputStream: InputStream = assetManager.open(chromeImageName)
-            val chromeBitmap = BitmapFactory.decodeStream(chromeInputStream)
-            chromeImageView.setImageBitmap(chromeBitmap)*/
         } catch (e: IOException) {
             Log.e(TAG, "Failed to open a test image")
         }
@@ -162,20 +143,19 @@ class MainActivity : AppCompatActivity() {
 
             mainScope.async(inferenceThread) {
                 mutex.withLock {
-                     if (ocrModel != null) {
-                         viewModel.onApplyModel(
-                             baseContext,
-                             selectedImage,
-                             ocrModel,
-                             inferenceThread
-                         )
-                     } else {
-                         Log.d(
-                             TAG,
-                             "Skipping running OCR since the ocrModel has not been properly initialized ..."
-                         )
-                     }
-                    //detectText()
+                    if (ocrModel != null) {
+                        viewModel.onApplyModel(
+                            baseContext,
+                            selectedImage,
+                            ocrModel,
+                            inferenceThread
+                        )
+                    } else {
+                        Log.d(
+                            TAG,
+                            "Skipping running OCR since the ocrModel has not been properly initialized ..."
+                        )
+                    }
                 }
             }
         }
@@ -197,10 +177,7 @@ class MainActivity : AppCompatActivity() {
                             selectedImage = bmp2!!
                             textPromptTextView.setText(getResources().getString(R.string.tfe_using_second_image))
                         }
-                    }/* else if (v.equals(chromeImageView)) {
-            selectedImageName = chromeImageName
-            textPromptTextView.setText(getResources().getString(R.string.tfe_using_third_image))
-          }*/
+                    }
                     return false
                 }
             }
@@ -225,10 +202,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun setChipsToLogView(itemsFound: Map<String, Int>) {
         chipsGroup.removeAllViews()
-
+        var mResult = ""
         for ((word, color) in itemsFound) {
             val chip = Chip(this)
             chip.text = word
+            mResult = word
             chip.chipBackgroundColor = getColorStateListForChip(color)
             chip.isClickable = false
             chipsGroup.addView(chip)
@@ -240,6 +218,11 @@ class MainActivity : AppCompatActivity() {
             labelsFoundTextView.text = getString(R.string.tfe_ocr_texts_found)
         }
         chipsGroup.parent.requestLayout()
+
+        val intent = Intent()
+        intent.putExtra("result", mResult)
+        setResult(RESULT_OK, intent)
+        finish()
     }
 
     private fun getColorStateListForChip(color: Int): ColorStateList {
@@ -269,131 +252,5 @@ class MainActivity : AppCompatActivity() {
     private fun enableControls(enable: Boolean) {
         runButton.isEnabled = enable
     }
-
-    fun removeBackground(bitmap: Bitmap?): Bitmap? {
-        //GrabCut part
-        var bitmap = bitmap
-        val img = Mat()
-        Utils.bitmapToMat(bitmap, img)
-        val r = img.rows()
-        val c = img.cols()
-        val p1 = Point((c / 100).toDouble(), (r / 100).toDouble())
-        val p2 = Point((c - c / 100).toDouble(), (r - r / 100).toDouble())
-        val rect = Rect(p1, p2)
-        val mask = Mat()
-        val fgdModel = Mat()
-        val bgdModel = Mat()
-        val imgC3 = Mat()
-        Imgproc.cvtColor(img, imgC3, Imgproc.COLOR_RGBA2RGB)
-        Imgproc.grabCut(imgC3, mask, rect, bgdModel, fgdModel, 4, Imgproc.GC_INIT_WITH_RECT)
-        val source = Mat(1, 1, CvType.CV_8U, Scalar(3.0))
-        Core.compare(mask, source /* GC_PR_FGD */, mask, Core.CMP_EQ)
-
-        //This is important. You must use Scalar(255,255, 255,255), not Scalar(255,255,255)
-        val foreground = Mat(img.size(), CvType.CV_8UC3, Scalar(255.0, 255.0, 255.0, 255.0))
-        img.copyTo(foreground, mask)
-
-        //  convert matrix to output bitmap
-        bitmap = Bitmap.createBitmap(
-            foreground.size().width.toInt(), foreground.size().height.toInt(),
-            Bitmap.Config.ARGB_8888
-        )
-        Utils.matToBitmap(foreground, bitmap)
-        //findEdges(bitmap)
-        return bitmap
-    }
-
-    fun convertToGrayScale(bitmap: Bitmap): Bitmap {
-        /*val image1: Bitmap
-
-        ///////////////transform back to Mat to be able to get Canny images//////////////////
-
-        ///////////////transform back to Mat to be able to get Canny images//////////////////
-        val img1 = Mat()
-        Utils.bitmapToMat(bitmap, img1)
-
-        //mat gray img1 holder
-
-        //mat gray img1 holder
-        val imageGray1 = Mat()
-
-        //mat canny image
-
-        //mat canny image
-        val imageCny1 = Mat()
-
-        //mat canny image
-
-        //mat canny image
-        val imageCny2 = Mat()
-
-
-        //Convert img1 into gray image
-        Imgproc.cvtColor(img1, imageGray1, Imgproc.COLOR_BGR2GRAY)
-
-        //Canny Edge Detection
-
-        //Canny Edge Detection
-        Imgproc.Canny(imageGray1, imageCny1, 10.0, 100.0, 3, true)
-
-        image1 = Bitmap.createBitmap(imageCny1.cols(), imageCny1.rows(), Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(imageCny1, image1)
-
-        return image1*/
-        val tmp = Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC1)
-        Utils.bitmapToMat(bitmap, tmp)
-        Imgproc.cvtColor(tmp, tmp, Imgproc.COLOR_RGB2GRAY)
-
-        Imgproc.GaussianBlur(tmp, tmp, Size(3.0, 3.0), 0.0)
-        Imgproc.adaptiveThreshold(
-            tmp,
-            tmp,
-            255.0,
-            Imgproc.ADAPTIVE_THRESH_MEAN_C,
-            Imgproc.THRESH_BINARY,
-            5,
-            4.0
-        )
-        tmp.convertTo(tmp, -1, 1.0, 50.0)
-        Utils.matToBitmap(tmp, bitmap)
-        writeBitmapToFile(bitmap)
-        return bitmap
-    }
-
-    private fun writeBitmapToFile(bitmap: Bitmap): String {
-        val file = File(outputDirectory, "${UUID.randomUUID()}.jpg")
-        val outputStream = FileOutputStream(file)
-        outputStream.write(bitmap.toByteArray())
-        outputStream.close()
-
-        return file.absolutePath
-    }
-
-   /* private fun detectText() {
-        val tess = TessBaseAPI()
-
-        val dataPath =
-            File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "tesseract").absolutePath
-
-        try {
-            tess.init(dataPath, "eng")
-
-
-            tess.setImage(selectedImage)
-            val text = tess.utF8Text
-            val logText: TextView = findViewById(R.id.log_view)
-            val labelsFoundTextView: TextView = findViewById(R.id.tfe_is_labels_found)
-            runOnUiThread {
-                logText.text = text
-                labelsFoundTextView.text = getString(R.string.tfe_ocr_texts_found)
-                enableControls(true)
-            }
-
-            tess.recycle()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }*/
-
 
 }
